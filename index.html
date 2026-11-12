@@ -31,6 +31,7 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--tx2);font-size:13px
 .lplate{width:100%;max-width:560px}
 .lplate img{display:block;width:100%;height:auto;max-height:46vh;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(0,0,0,.35))}
 .lplate img.lw{filter:brightness(0) invert(1) drop-shadow(0 6px 24px rgba(0,0,0,.35))}
+.lplate img.lt{filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 6px 24px rgba(0,0,0,.35))}
 .lplate.card{background:#fff;border-radius:22px;padding:32px 40px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
 .lplate.card img{filter:none}
 .lright{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 56px 24px 16px;position:relative;z-index:1}
@@ -494,7 +495,7 @@ function applyBrand(b0){
   document.title=nm;
   const lh=$("#lhead");if(lh)lh.innerHTML=`${b.logo?`<img class="llogo" src="${esc(b.logo)}" alt="">`:""}<div class="brand">${esc(nm)}</div><div style="color:var(--mut)">${esc(tag)}</div>`;
   const li=$("#lLogo");
-  if(li){const cu=b.loginLogo||"",md=cu?(b.loginLogoMode||"asli"):"asli";li.src=cu||NV_LOGO;li.className=md==="putih"?"lw":"";li.parentElement.classList.toggle("card",md==="kartu")}
+  if(li){const cu=b.loginLogo||"",md=cu?(b.loginLogoMode||"asli"):"asli";li.src=cu||NV_LOGO;li.className=md==="putih"?"lw":md==="tepi"?"lt":"";li.parentElement.classList.toggle("card",md==="kartu")}
   const sb=$("#sbLogo");if(sb)sb.classList.toggle("plate",b.logoPlate!==false);
   if(sb)sb.innerHTML=b.logo?`<img src="${esc(b.logo)}" alt="${esc(nm)}" title="${esc(nm)}">`:`<span>${esc(nm)}</span>`;
   let ic=document.querySelector("link[rel=icon]");
@@ -2141,7 +2142,7 @@ function userAccess(id){
 }
 
 /* ---- Pengaturan Tampilan (admin) ---- */
-const loginImgStyle=d=>{const m=d.loginLogo?(d.loginLogoMode||"asli"):"asli";return m==="putih"?"filter:brightness(0) invert(1)":m==="kartu"?"background:#fff;border-radius:8px;padding:6px 10px":""};
+const loginImgStyle=d=>{const m=d.loginLogo?(d.loginLogoMode||"asli"):"asli";return m==="putih"?"filter:brightness(0) invert(1)":m==="tepi"?"filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)":m==="kartu"?"background:#fff;border-radius:8px;padding:6px 10px":""};
 function loginBoxHtml(d){return `<img src="${esc(d.loginLogo||NV_LOGO)}" alt="" style="${loginImgStyle(d)}">`}
 function loginPvHtml(d){return `<div style="margin-top:14px"><b style="font-size:12px;color:var(--mut)">Sisi kiri halaman login</b><div class="pvbg" style="margin-top:6px;text-align:center;padding:22px 14px"><img src="${esc(d.loginLogo||NV_LOGO)}" alt="" style="max-width:80%;max-height:56px;object-fit:contain;${loginImgStyle(d)}"></div></div>`}
 function pvHtml(d){
@@ -2170,7 +2171,7 @@ V.tampilan=()=>{
       <div class="hint" style="margin-bottom:10px">Logo besar di sisi kiri halaman login. Jika belum diganti, dipakai logo NauVision bawaan.</div>
       <div class="bdlogo"><div class="box" id="bdLoginLogoBox" style="width:170px;background:linear-gradient(135deg,var(--side),var(--pri))">${loginBoxHtml(d)}</div>
         <div class="bdbtns"><label class="btn" style="cursor:pointer;flex-direction:row;align-items:center;justify-content:center;color:var(--tx)">Pilih gambar…<input type="file" id="bdLoginLogo" accept="image/*" hidden></label><button type="button" class="btn del" data-a="bdLoginLogoDel">Pakai logo bawaan</button></div></div>
-      <label style="margin-top:12px">Tampilan logo<select data-bd="loginLogoMode"><option value="asli" ${d.loginLogoMode!=="putih"&&d.loginLogoMode!=="kartu"?"selected":""}>Asli (warna apa adanya)</option><option value="putih" ${d.loginLogoMode==="putih"?"selected":""}>Putih polos (untuk logo gelap)</option><option value="kartu" ${d.loginLogoMode==="kartu"?"selected":""}>Di dalam kartu putih</option></select></label>
+      <label style="margin-top:12px">Tampilan logo<select data-bd="loginLogoMode"><option value="asli" ${d.loginLogoMode!=="putih"&&d.loginLogoMode!=="kartu"&&d.loginLogoMode!=="tepi"?"selected":""}>Asli (warna apa adanya)</option><option value="tepi" ${d.loginLogoMode==="tepi"?"selected":""}>Asli + tepi putih (tanpa kotak)</option><option value="putih" ${d.loginLogoMode==="putih"?"selected":""}>Putih polos (untuk logo gelap)</option><option value="kartu" ${d.loginLogoMode==="kartu"?"selected":""}>Di dalam kartu putih</option></select></label>
       <div class="hint" style="margin-top:6px">Disarankan PNG/WEBP/SVG berlatar transparan. Kalau logo berwarna gelap dan susah terbaca di latar biru, pilih "Putih polos" atau "Di dalam kartu putih". Berlaku untuk semua pengguna setelah klik Simpan.</div></div>
     <div class="card"><h3>Tema & Warna</h3>
       <div class="sws">${THEMES.map(t=>`<button type="button" class="sw ${d.theme===t.id?"on":""}" data-a="bdPreset" data-id="${t.id}"><i style="background:${t.side}"></i><i style="background:${t.pri}"></i><span>${t.name}</span></button>`).join("")}</div>
@@ -2212,7 +2213,7 @@ async function bdLogoLoad(file,key="logo"){
 }
 async function bdSave(){
   const d=S.draft;if(!d)return;
-  const out={brandName:(d.brandName||"").trim(),tagline:(d.tagline||"").trim(),logo:d.logo||"",loginLogo:d.loginLogo||"",loginLogoMode:["asli","putih","kartu"].includes(d.loginLogoMode)?d.loginLogoMode:"asli",theme:d.theme||"custom",pri:hexOk(d.pri)?d.pri:BRAND_DEF.pri,side:hexOk(d.side)?d.side:BRAND_DEF.side,mode:d.mode==="dark"?"dark":"light",showBanner:d.showBanner!==false,logoPlate:d.logoPlate!==false,updatedAt:Date.now()};
+  const out={brandName:(d.brandName||"").trim(),tagline:(d.tagline||"").trim(),logo:d.logo||"",loginLogo:d.loginLogo||"",loginLogoMode:["asli","tepi","putih","kartu"].includes(d.loginLogoMode)?d.loginLogoMode:"asli",theme:d.theme||"custom",pri:hexOk(d.pri)?d.pri:BRAND_DEF.pri,side:hexOk(d.side)?d.side:BRAND_DEF.side,mode:d.mode==="dark"?"dark":"light",showBanner:d.showBanner!==false,logoPlate:d.logoPlate!==false,updatedAt:Date.now()};
   if(JSON.stringify(out).length>900000)throw new Error("Total ukuran logo terlalu besar (batas dokumen Firestore ±1 MB). Pakai gambar yang lebih kecil");
   await store.saveBranding(out);
   const cn=(d.companyName||"").trim()||"NauVision";
