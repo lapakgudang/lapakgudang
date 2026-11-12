@@ -1,0 +1,219 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helper autentikasi & peran ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(userPath(request.auth.uid));
+    }
+
+    function profile() {
+      return get(userPath(request.auth.uid)).data;
+    }
+
+    function activeUser() {
+      return hasProfile() && profile().active != false;
+    }
+
+    function roleIn(roles) {
+      return activeUser() && profile().role in roles;
+    }
+
+    function isAdmin() {
+      return roleIn(['admin']);
+    }
+
+    function isWarehouse() {
+      return roleIn(['admin', 'gudang']);
+    }
+
+    function isSalesOwner() {
+      return activeUser()
+        && resource.data.salesId == request.auth.uid;
+    }
+
+    // ---------- Pengguna ----------
+    match /users/{uid} {
+      // Pengguna hanya dapat membaca profil sendiri; admin dapat membaca semua.
+      allow read: if signedIn()
+        && (request.auth.uid == uid || isAdmin());
+
+      // Pembuatan akun biasa hanya oleh admin.
+      // Pengecualian bootstrap pertama harus satu batch dengan dokumen bootstrap
+      // dan profil admin yang UID-nya sama dengan akun yang sedang login.
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == uid
+          && !exists(/databases/$(database)/documents/meta/bootstrap)
+          && existsAfter(/databases/$(database)/documents/meta/bootstrap)
+          && getAfter(/databases/$(database)/documents/meta/bootstrap).data.by == uid
+          && request.resource.data.role == 'admin'
+          && request.resource.data.active == true
+        );
+
+      // Hanya admin yang dapat mengubah role, status aktif, menu, atau profil user.
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- Dokumen meta ----------
+    match /meta/bootstrap {
+      allow read: if false;
+
+      // Dokumen bootstrap hanya boleh dibuat bersamaan dengan profil admin pertama.
+      allow create: if signedIn()
+        && !exists(/databases/$(database)/documents/meta/bootstrap)
+        && existsAfter(userPath(request.auth.uid))
+        && getAfter(userPath(request.auth.uid)).data.role == 'admin'
+        && getAfter(userPath(request.auth.uid)).data.active == true
+        && request.resource.data.by == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+
+    match /meta/branding {
+      // Dipakai halaman login sebelum pengguna masuk.
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /meta/settings {
+      allow read: if activeUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- Master barang & gudang ----------
+    match /items/{id} {
+      allow read: if activeUser();
+      allow create, update: if isWarehouse();
+      allow delete: if isAdmin();
+    }
+
+    match /warehouses/{id} {
+      allow read: if activeUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- Persediaan & nomor seri ----------
+    // Index.html memakai ID stok: itemId + "__" + whId.
+    match /stock/{id} {
+      allow read: if activeUser();
+      allow create, update: if isWarehouse();
+      allow delete: if isAdmin();
+    }
+
+    match /serials/{id} {
+      allow read: if activeUser();
+      allow create, update: if isWarehouse();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Mutasi / kartu stok ----------
+    // Mutasi dibuat oleh transaksi barang masuk, keluar, dan transfer.
+    // Tidak ada fitur edit/hapus mutasi dari index.html.
+    match /movements/{id} {
+      allow read: if roleIn(['admin', 'gudang', 'finance']);
+      allow create: if isWarehouse();
+      allow update, delete: if false;
+    }
+
+    // ---------- Purchase Order ----------
+    match /purchaseOrders/{id} {
+      allow read: if roleIn(['admin', 'gudang', 'finance']);
+      allow create, update: if roleIn(['admin', 'gudang', 'finance']);
+      allow delete: if false;
+    }
+
+    // ---------- Invoice / penjualan ----------
+    match /invoices/{id} {
+      allow read: if roleIn(['admin', 'gudang', 'finance', 'sales']);
+      allow create: if isWarehouse();
+      allow update: if roleIn(['admin', 'gudang', 'finance']);
+      allow delete: if false;
+    }
+
+    // ---------- Rent ----------
+    match /rentals/{id} {
+      allow read: if isAdmin()
+        || (activeUser() && resource.data.salesId == request.auth.uid);
+
+      // Sales membuat pengajuan pending atas nama sendiri.
+      // Admin dapat membuat rent yang langsung disetujui.
+      allow create: if isAdmin()
+        || (
+          roleIn(['sales'])
+          && request.resource.data.salesId == request.auth.uid
+          && request.resource.data.status == 'pending'
+        );
+
+      // Admin mengelola approval, pengembalian, dan edit rent.
+      // Sales hanya boleh mengedit data pengajuan miliknya selama masih pending.
+      allow update: if isAdmin()
+        || (
+          roleIn(['sales'])
+          && resource.data.salesId == request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.salesId == request.auth.uid
+          && request.resource.data.status == 'pending'
+        );
+
+      allow delete: if isAdmin()
+        || (
+          roleIn(['sales'])
+          && resource.data.salesId == request.auth.uid
+          && resource.data.status == 'pending'
+        );
+    }
+
+    // ---------- Order barang ----------
+    match /orders/{id} {
+      allow read: if isAdmin()
+        || (activeUser() && resource.data.salesId == request.auth.uid);
+
+      allow create: if roleIn(['sales'])
+        && request.resource.data.salesId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Persetujuan / penolakan order dilakukan admin.
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin()
+        || (
+          roleIn(['sales'])
+          && resource.data.salesId == request.auth.uid
+          && resource.data.status == 'pending'
+        );
+    }
+
+    // ---------- Customer & supplier ----------
+    // Semua role aktif perlu membaca mitra untuk pilihan customer/supplier.
+    match /partners/{id} {
+      allow read: if activeUser();
+      allow create, update: if roleIn(['admin', 'gudang', 'sales']);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Klaim garansi / RMA ----------
+    match /rma/{id} {
+      allow read: if roleIn(['admin', 'gudang']);
+      allow create, update: if roleIn(['admin', 'gudang']);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Stok opname ----------
+    match /opnames/{id} {
+      allow read, create: if roleIn(['admin', 'gudang']);
+      allow update, delete: if isAdmin();
+    }
+
+    // Semua koleksi lain ditolak secara default karena tidak ada allow rule.
+  }
+}
