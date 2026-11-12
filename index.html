@@ -50,10 +50,16 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--tx2);font-size:13px
 .demo{margin-top:18px;padding:12px;background:var(--head);border-radius:8px;font-size:12px;color:var(--tx2)}
 .demo b{display:block;margin-bottom:6px}
 .demo span{display:inline-block;margin:2px 4px 2px 0;padding:3px 9px;border-radius:12px;background:var(--card);border:1px solid var(--bd);cursor:pointer;color:var(--pri)}
-.demo .dmn{margin-bottom:10px;line-height:1.4}
-.demo .dmb{display:flex;flex-wrap:wrap;gap:8px}
-.demo .btn.dm{height:34px;padding:0 14px;color:var(--pri)}
-.demo .btn.dm:disabled{opacity:.5;cursor:default}
+.demo.demo2{background:none;padding:0;margin-top:18px;font-size:12.5px}
+.demo2 .dmsep{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--mut);font-size:12px}
+.demo2 .dmsep:before,.demo2 .dmsep:after{content:"";flex:1;height:1px;background:var(--line)}
+.demo2 .dmsep small{font-size:12px}
+.demo2 .dmb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.demo2 .btn.dm{height:auto;min-height:38px;padding:6px 8px;font-size:13px;font-weight:600;line-height:1.15;white-space:normal;color:var(--pri);border-color:var(--pri);background:var(--card)}
+.demo2 .btn.dm{border-color:color-mix(in srgb,var(--pri) 45%,var(--card));background:color-mix(in srgb,var(--pri) 8%,var(--card))}
+.demo2 .btn.dm:hover{background:var(--pri);border-color:var(--pri);color:var(--on-pri)}
+.demo2 .btn.dm:disabled{opacity:.5;cursor:default}
+.demo2 .dmn{margin-top:10px;text-align:center;color:var(--mut);line-height:1.4}
 #demoBar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 16px;background:#fff4d6;color:#6b4700;border-bottom:1px solid #f0d58a;font-size:13px;text-align:center}
 #demoBar .btn{height:28px;padding:0 12px;background:#fff;color:#6b4700;border-color:#e6c978}
 .link{background:none;border:0;color:var(--pri);cursor:pointer;padding:0;margin-top:12px;font-size:13px}
@@ -2481,15 +2487,16 @@ const errMsg=e=>/invalid-credential|wrong-password|user-not-found|invalid-email/
 function showLogin(){
   $("#shell").hidden=true;$("#login").hidden=false;$("#lerr").textContent="";capNew();const _pi=$("#loginForm").password,_pb=$(".pwb");if(_pi.type!=="password")_pb.click();
   $("#demoBox").hidden=false;
-  if(USE_FB)$("#demoBox").innerHTML=`<b>Ingin mencoba dulu? Masuk akun demo</b><div class="dmn">Berisi data contoh. Tidak mengubah data asli dan akan hilang saat Anda keluar.</div><div class="dmb">`+[["admin","Admin"],["gudang","Staf Gudang"],["finance","Keuangan"],["sales","Sales"]].map(([r,l])=>`<button type="button" class="btn dm" data-demo="${r}">${l}</button>`).join("")+`</div>`;
+  $("#demoBox").className=USE_FB?"demo demo2":"demo";
+  if(USE_FB)$("#demoBox").innerHTML=`<div class="dmsep"><small>atau coba dulu</small></div><div class="dmb">`+[["admin","Admin"],["gudang","Staf Gudang"],["sales","Sales"]].map(([r,l])=>`<button type="button" class="btn dm" data-demo="${r}">${l}</button>`).join("")+`</div><div class="dmn">Akun demo berisi data contoh. Tidak mengubah data asli dan hilang saat Anda keluar.</div>`;
   else $("#demoBox").innerHTML=`<b>Akun demo (klik untuk isi otomatis)</b>`+[["admin@demo.local","admin123","Admin"],["gudang@demo.local","gudang123","Staf Gudang"],["finance@demo.local","finance123","Keuangan"],["sales@demo.local","sales123","Sales"]].map(([e,p,l])=>`<span data-e="${e}" data-p="${p}">${l}</span>`).join("");
 }
 $("#demoBox").onclick=e=>{
   const d=e.target.closest("[data-demo]");if(d){enterDemo(d.dataset.demo);return}
-  const s=e.target.closest("span");if(s){const f=$("#loginForm");f.email.value=s.dataset.e;f.password.value=s.dataset.p}
+  const s=e.target.closest("span[data-e]");if(s){const f=$("#loginForm");f.email.value=s.dataset.e;f.password.value=s.dataset.p}
 };
 /* Sesi demo publik: store diganti ke data contoh di memori (localStore mem), store asli (Firestore) tidak disentuh sama sekali. */
-const DEMO_ACC={admin:["admin@demo.local","admin123"],gudang:["gudang@demo.local","gudang123"],finance:["finance@demo.local","finance123"],sales:["sales@demo.local","sales123"]};
+const DEMO_ACC={admin:["admin@demo.local","admin123"],gudang:["gudang@demo.local","gudang123"],sales:["sales@demo.local","sales123"]};
 let REAL_STORE=null,BRAND0=null;
 function exitDemo(){
   if(!DEMO)return;
