@@ -50,6 +50,12 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--tx2);font-size:13px
 .demo{margin-top:18px;padding:12px;background:var(--head);border-radius:8px;font-size:12px;color:var(--tx2)}
 .demo b{display:block;margin-bottom:6px}
 .demo span{display:inline-block;margin:2px 4px 2px 0;padding:3px 9px;border-radius:12px;background:var(--card);border:1px solid var(--bd);cursor:pointer;color:var(--pri)}
+.demo .dmn{margin-bottom:10px;line-height:1.4}
+.demo .dmb{display:flex;flex-wrap:wrap;gap:8px}
+.demo .btn.dm{height:34px;padding:0 14px;color:var(--pri)}
+.demo .btn.dm:disabled{opacity:.5;cursor:default}
+#demoBar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 16px;background:#fff4d6;color:#6b4700;border-bottom:1px solid #f0d58a;font-size:13px;text-align:center}
+#demoBar .btn{height:28px;padding:0 12px;background:#fff;color:#6b4700;border-color:#e6c978}
 .link{background:none;border:0;color:var(--pri);cursor:pointer;padding:0;margin-top:12px;font-size:13px}
 /* shell */
 #shell{display:flex;height:100vh}
@@ -248,6 +254,7 @@ html[data-mode=dark] .nota{background:#fff;padding:14px;border-radius:6px}
 <div id="shell" hidden>
   <aside id="side"><div class="logo" id="sbLogo"><span>StokKu ERP</span></div><nav id="nav"></nav></aside>
   <main>
+    <div id="demoBar" hidden><span><b>MODE DEMO</b> · data contoh, perubahan tidak tersimpan dan hilang saat keluar atau refresh.</span><button class="btn sm" data-a="logout" type="button">Keluar dari demo</button></div>
     <header>
       <button id="burger">☰</button>
       <h1 id="title"></h1>
@@ -283,6 +290,8 @@ const firebaseConfig = {
   measurementId: "G-8N2F2N9HJN"
 };
 const USE_FB = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+/* DEMO = sesi demo publik: data contoh di memori browser, TIDAK menyentuh Firestore, hilang saat keluar/refresh */
+let DEMO = false;
 
 /* Peran & menu yang boleh diakses. Tambah peran baru di sini.
    Urutan menu harus mengikuti kelompok (g) di MENUS. */
@@ -458,7 +467,7 @@ const mixC=(a,b,t)=>{const x=hex2(a),y=hex2(b);return"#"+x.map((v,i)=>Math.round
 const lumC=h=>{const[r,g,b]=hex2(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*r+.7152*g+.0722*b};
 const BC="stokku_brand_cache";
 const readBrandCache=()=>{try{return JSON.parse(localStorage.getItem(BC)||"null")||{}}catch{return{}}};
-const cacheBrand=b=>{try{localStorage.setItem(BC,JSON.stringify(b))}catch{}};
+const cacheBrand=b=>{if(DEMO)return;try{localStorage.setItem(BC,JSON.stringify(b))}catch{}};
 function brandBarHtml(b){
   b={...BRAND_DEF,...(b||{})};const nm=(b.brandName||"").trim();
   if(!b.logo&&!nm)return"";
@@ -487,9 +496,10 @@ function applyBrand(b0){
 }
 
 /* ======================= DATA: MODE DEMO ======================= */
-function localStore(){
-  const LS="stokku_demo_v3";
-  let db=JSON.parse(localStorage.getItem(LS)||"null");
+function localStore(opts){
+  const LS="stokku_demo_v3",MEM=!!(opts&&opts.mem); /* MEM: hanya di memori, tidak baca/tulis localStorage */
+  let memUid=null;
+  let db=MEM?null:JSON.parse(localStorage.getItem(LS)||"null");
   if(!db){
     db={items:[],warehouses:[],stock:[],movements:[],users:[],serials:[],purchaseOrders:[],invoices:[],
       settings:{costMethod:"avg",companyName:"StokKu Demo",companyAddr:"Jl. Contoh No. 1, Jakarta",companyPhone:"021-0000000"}};
@@ -524,9 +534,9 @@ function localStore(){
       {id:"p2",no:poNo(),date:daysAgo(1),eta:daysAgo(-5),supplier:"PT Supplier B",note:"",status:"open",byName:"Admin Demo",createdAt:Date.now()-864e5,
        lines:[{itemId:"i3",code:"BRG-003",name:I.i3.name,qty:50,price:245000,received:0},{itemId:"i4",code:"BRG-004",name:I.i4.name,qty:10,price:880000,received:0}]},
     ].map(p=>({...p,total:p.lines.reduce((a,l)=>a+l.qty*l.price,0)}));
-    localStorage.setItem(LS,JSON.stringify(db));
+    if(!MEM)localStorage.setItem(LS,JSON.stringify(db));
   }
-  const save=()=>localStorage.setItem(LS,JSON.stringify(db));
+  const save=()=>{if(!MEM)localStorage.setItem(LS,JSON.stringify(db))};
   const clean=u=>{const{password,...r}=u;return r};
   return {
     async list(c,w){return structuredClone((db[c]||[]).filter(r=>!w||r[w[0]]===w[1]))},
@@ -543,14 +553,14 @@ function localStore(){
     async getSerial(id){return structuredClone(db.serials.find(s=>s.id===id)||null)},
     async findSerial(raw){const id=sid(raw),sh=shortSn(raw);return structuredClone(db.serials.filter(s=>s.id===id||s.short===sh||s.sn.startsWith(raw)).slice(0,20))},
     auth:{
-      async restore(){const id=sessionStorage.getItem("stokku_uid");const u=db.users.find(x=>x.id===id&&x.active!==false);return u?clean(u):null},
+      async restore(){const id=MEM?memUid:sessionStorage.getItem("stokku_uid");const u=db.users.find(x=>x.id===id&&x.active!==false);return u?clean(u):null},
       async login(email,pw){
         const u=db.users.find(x=>x.email.toLowerCase()===email.toLowerCase()&&x.password===pw);
         if(!u)throw new Error("Email atau password salah");
         if(u.active===false)throw new Error("Akun dinonaktifkan");
-        sessionStorage.setItem("stokku_uid",u.id);return clean(u);
+        if(MEM)memUid=u.id;else sessionStorage.setItem("stokku_uid",u.id);return clean(u);
       },
-      async logout(){sessionStorage.removeItem("stokku_uid")},
+      async logout(){if(MEM)memUid=null;else sessionStorage.removeItem("stokku_uid")},
       async createUser(d){
         if(db.users.some(x=>x.email.toLowerCase()===d.email.toLowerCase()))throw new Error("Email sudah dipakai");
         db.users.push({id:rid(),name:d.name,email:d.email,password:d.password,role:d.role,position:d.position||"",menus:d.menus||[],active:true});save();
@@ -1482,7 +1492,7 @@ V.keuangan=()=>{
     <div class="stat"><small>Laba Kotor Bulan Ini</small><div class="sm ${rev-cogs>=0?"pos":"neg"}">${rp(rev-cogs)}</div></div></div>
   <div class="two"><div class="card"><h3>Nilai Aset per Gudang <span class="chip c-gray">Metode: ${st.costMethod==="fifo"?"FIFO":"Average"}</span></h3>
     <div class="tw"><table><thead><tr><th>Gudang</th><th class="num">Unit</th><th class="num">Nilai Persediaan</th></tr></thead><tbody>${perWh.map(r=>`<tr><td>${esc(r.w.name)}</td><td class="num">${nf(r.q)}</td><td class="num"><b>${rp(r.v)}</b></td></tr>`).join("")||'<tr><td colspan="3" class="empty">Belum ada gudang</td></tr>'}</tbody></table></div>
-    <div class="hint" style="margin-top:8px">Diperbarui otomatis saat stok berubah${USE_FB?" (real-time dari Firestore)":""}.</div></div>
+    <div class="hint" style="margin-top:8px">Diperbarui otomatis saat stok berubah${USE_FB&&!DEMO?" (real-time dari Firestore)":""}.</div></div>
   ${S.user.role==="admin"?`<div class="card"><h3>Pengaturan HPP & Nota</h3><form id="setf" class="f" style="display:flex;flex-direction:column;gap:10px">
     <label>Metode HPP<select name="costMethod"><option value="avg" ${st.costMethod!=="fifo"?"selected":""}>Average (rata-rata bergerak)</option><option value="fifo" ${st.costMethod==="fifo"?"selected":""}>FIFO (masuk pertama, keluar pertama)</option></select></label>
     <label>Nama Perusahaan (kop nota)<input name="companyName" value="${esc(st.companyName)}"></label>
@@ -2084,7 +2094,7 @@ async function rmaDel(id){
 }
 
 V.pengguna=()=>`<div class="card"><div class="filters"><span class="sp"></span><button class="btn pri" data-a="userForm">+ Tambah Pengguna</button></div><div id="tbl"></div>
-  <div class="hint" style="margin-top:10px">${USE_FB?"Menonaktifkan akun = mencabut akses. Akun login tetap ada di Firebase Authentication.":"Mode demo: akun hanya tersimpan di browser ini."}</div></div>`;
+  <div class="hint" style="margin-top:10px">${USE_FB&&!DEMO?"Menonaktifkan akun = mencabut akses. Akun login tetap ada di Firebase Authentication.":"Mode demo: akun hanya tersimpan di browser ini."}</div></div>`;
 T.pengguna=()=>{
   $("#tbl").innerHTML=`<div class="tw"><table><thead><tr><th>Nama</th><th>Email</th><th>Peran</th><th>Posisi</th><th>Status</th><th></th></tr></thead><tbody>${S.users.map(u=>{
     const me=u.id===S.user.id;
@@ -2325,7 +2335,7 @@ window.addEventListener("hashchange",()=>S.user&&render());
 
 /* ============================ EVENTS ============================ */
 const A={
-  logout:async()=>{OP=null;S.draft=null;applyBrand(S.brand);unwatch?.();unwatch=null;await store.auth.logout();location.hash="";S.user=null;showLogin()},
+  logout:async()=>{OP=null;S.draft=null;applyBrand(S.brand);unwatch?.();unwatch=null;await store.auth.logout();exitDemo();location.hash="";S.user=null;showLogin()},
   closeDlg:()=>$("#dlg").close(),
   pnForm:b=>partnerForm(b.dataset.id||null),pnNew:b=>partnerForm(null,b.dataset.k,name=>{const i=document.querySelector("#trx [name=party]");if(i)i.value=name}),pnHist:b=>pnHist(b.dataset.id),
   pnToggle:async b=>{const p=S.partners.find(x=>x.id===b.dataset.id);if(!p)return;const on=p.active===false;await store.set("partners",p.id,{active:on});p.active=on;T.mitra();toast(on?"Diaktifkan":"Dinonaktifkan")},
@@ -2470,10 +2480,35 @@ document.addEventListener("keydown",e=>{
 const errMsg=e=>/invalid-credential|wrong-password|user-not-found|invalid-email/.test(e.code||"")?"Email atau password salah":/too-many/.test(e.code||"")?"Terlalu banyak percobaan, coba lagi nanti":e.message;
 function showLogin(){
   $("#shell").hidden=true;$("#login").hidden=false;$("#lerr").textContent="";capNew();const _pi=$("#loginForm").password,_pb=$(".pwb");if(_pi.type!=="password")_pb.click();
-  $("#demoBox").hidden=USE_FB;
-  if(!USE_FB)$("#demoBox").innerHTML=`<b>Akun demo (klik untuk isi otomatis)</b>`+[["admin@demo.local","admin123","Admin"],["gudang@demo.local","gudang123","Staf Gudang"],["finance@demo.local","finance123","Keuangan"],["sales@demo.local","sales123","Sales"]].map(([e,p,l])=>`<span data-e="${e}" data-p="${p}">${l}</span>`).join("");
+  $("#demoBox").hidden=false;
+  if(USE_FB)$("#demoBox").innerHTML=`<b>Ingin mencoba dulu? Masuk akun demo</b><div class="dmn">Berisi data contoh. Tidak mengubah data asli dan akan hilang saat Anda keluar.</div><div class="dmb">`+[["admin","Admin"],["gudang","Staf Gudang"],["finance","Keuangan"],["sales","Sales"]].map(([r,l])=>`<button type="button" class="btn dm" data-demo="${r}">${l}</button>`).join("")+`</div>`;
+  else $("#demoBox").innerHTML=`<b>Akun demo (klik untuk isi otomatis)</b>`+[["admin@demo.local","admin123","Admin"],["gudang@demo.local","gudang123","Staf Gudang"],["finance@demo.local","finance123","Keuangan"],["sales@demo.local","sales123","Sales"]].map(([e,p,l])=>`<span data-e="${e}" data-p="${p}">${l}</span>`).join("");
 }
-$("#demoBox").onclick=e=>{const s=e.target.closest("span");if(s){const f=$("#loginForm");f.email.value=s.dataset.e;f.password.value=s.dataset.p}};
+$("#demoBox").onclick=e=>{
+  const d=e.target.closest("[data-demo]");if(d){enterDemo(d.dataset.demo);return}
+  const s=e.target.closest("span");if(s){const f=$("#loginForm");f.email.value=s.dataset.e;f.password.value=s.dataset.p}
+};
+/* Sesi demo publik: store diganti ke data contoh di memori (localStore mem), store asli (Firestore) tidak disentuh sama sekali. */
+const DEMO_ACC={admin:["admin@demo.local","admin123"],gudang:["gudang@demo.local","gudang123"],finance:["finance@demo.local","finance123"],sales:["sales@demo.local","sales123"]};
+let REAL_STORE=null,BRAND0=null;
+function exitDemo(){
+  if(!DEMO)return;
+  DEMO=false;if(REAL_STORE)store=REAL_STORE;REAL_STORE=null;
+  S.brand=BRAND0||S.brand;BRAND0=null;applyBrand(S.brand);
+  $("#demoBar").hidden=true;
+}
+async function enterDemo(role){
+  const bx=$("#demoBox"),bs=[...bx.querySelectorAll("button")],acc=DEMO_ACC[role];
+  if(!acc||DEMO)return;
+  bs.forEach(b=>b.disabled=true);$("#lerr").textContent="";
+  REAL_STORE=store;BRAND0=S.brand;DEMO=true;
+  try{
+    store=localStore({mem:true});
+    await enter(await store.auth.login(acc[0],acc[1]));
+    $("#demoBar").hidden=false;
+  }catch(x){exitDemo();$("#lerr").textContent="Gagal membuka demo: "+x.message}
+  bs.forEach(b=>b.disabled=false);
+}
 async function enter(u){
   S.user=u;await loadData();buildNav();
   $("#login").hidden=true;$("#shell").hidden=false;render();
