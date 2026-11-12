@@ -1,0 +1,84 @@
+From 2bd35ee63dade3654b2108e38655ebac551eda5e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 14:18:22 +0700
+Subject: [PATCH] Aktifkan Lapak Gudang di landing page
+
+Kartu Lapak Gudang jadi Tersedia dengan tombol Buka Versi Web
+(lapakgudang.github.io/lapakgudang), roadmap dan footer ikut diperbarui,
+FAQ disesuaikan: hanya Lapak Kosan yang masih Coming Soon.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PAnekBQVfwPKBrvSig12iS
+---
+ index.html | 14 ++++++++------
+ js/main.js |  1 +
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/index.html b/index.html
+index bd83f7b..3ecb52f 100644
+--- a/index.html
++++ b/index.html
+@@ -131,7 +131,7 @@
+       <ol class="roadmap reveal" aria-label="Peta produk">
+         <li class="road road--live"><span class="road__dot"></span><div><b>Lapak Absen</b><small>Absensi dan pengelolaan karyawan</small></div><em>Tersedia</em></li>
+         <li class="road"><span class="road__dot"></span><div><b>Lapak Kosan</b><small>Pengelolaan usaha kos</small></div><em>Segera</em></li>
+-        <li class="road"><span class="road__dot"></span><div><b>Lapak Gudang</b><small>ERP gudang dan bisnis</small></div><em>Segera</em></li>
++        <li class="road road--live"><span class="road__dot"></span><div><b>Lapak Gudang</b><small>ERP gudang dan bisnis</small></div><em>Tersedia</em></li>
+       </ol>
+     </div>
+   </section>
+@@ -181,8 +181,8 @@
+         </article>
+ 
+         <!-- Lapak Gudang -->
+-        <article class="card card--soon reveal">
+-          <span class="badge badge--soon">Coming Soon</span>
++        <article class="card reveal" id="gudang">
++          <span class="badge badge--live">Tersedia</span>
+           <span class="card__icon"><svg aria-hidden="true"><use href="#i-gudang"/></svg></span>
+           <h3>LAPAK <span>GUDANG</span></h3>
+           <p>ERP System untuk pengelolaan gudang dan bisnis.</p>
+@@ -192,7 +192,9 @@
+             <li><svg class="ic"><use href="#i-check"/></svg>Laporan real-time</li>
+             <li><svg class="ic"><use href="#i-check"/></svg>Multi-user</li>
+           </ul>
+-          <button class="btn btn--disabled" disabled>Segera Hadir</button>
++          <div class="card__actions">
++            <a href="#" class="btn" data-link="gudang-web" target="_blank" rel="noopener"><svg class="ic"><use href="#i-globe"/></svg>Buka Versi Web</a>
++          </div>
+         </article>
+ 
+       </div>
+@@ -319,7 +321,7 @@
+         <details><summary>Berapa harga Lapak Absen?<svg class="ic"><use href="#i-chev"/></svg></summary><p>Untuk informasi harga dan paket, silakan hubungi kami lewat WhatsApp di 0823-8469-1477. Kami akan bantu sesuai kebutuhan usaha Anda.</p></details>
+         <details><summary>Berapa karyawan yang bisa dikelola?<svg class="ic"><use href="#i-chev"/></svg></summary><p>Tidak ada batas jumlah karyawan di Lapak Absen, jadi bisa dipakai usaha kecil maupun yang karyawannya banyak.</p></details>
+         <details><summary>Bagaimana cara memasang aplikasi APK?<svg class="ic"><use href="#i-chev"/></svg></summary><p>Unduh file lewat tombol Download APK, buka file tersebut di HP Android, izinkan pemasangan dari sumber tidak dikenal jika diminta, lalu ikuti proses instalasi. Langkah lengkapnya ada di <a href="#panduan-apk">panduan pasang aplikasi</a>.</p></details>
+-        <details><summary>Kapan Lapak Kosan dan Lapak Gudang tersedia?<svg class="ic"><use href="#i-chev"/></svg></summary><p>Keduanya sedang dalam pengembangan dan berstatus Coming Soon. Pantau terus halaman ini untuk kabar terbarunya.</p></details>
++        <details><summary>Kapan Lapak Kosan tersedia? Bagaimana dengan Lapak Gudang?<svg class="ic"><use href="#i-chev"/></svg></summary><p>Lapak Gudang sudah bisa dibuka lewat versi web di <a href="#gudang">bagian Produk</a>. Lapak Kosan masih dalam pengembangan dan berstatus Coming Soon, jadi pantau terus halaman ini untuk kabar terbarunya.</p></details>
+       </div>
+     </div>
+   </section>
+@@ -371,7 +373,7 @@
+       <ul>
+         <li><a href="#fitur">Lapak Absen</a></li>
+         <li><span>Lapak Kosan <em>Segera</em></span></li>
+-        <li><span>Lapak Gudang <em>Segera</em></span></li>
++        <li><a href="#gudang">Lapak Gudang</a></li>
+       </ul>
+     </div>
+     <div>
+diff --git a/js/main.js b/js/main.js
+index 9d27b28..e543288 100644
+--- a/js/main.js
++++ b/js/main.js
+@@ -2,6 +2,7 @@
+ const LINKS = {
+   "absen-web": "https://lapakabsensi.github.io/lapakabsensi/?c=akundemo",
+   "absen-apk": "downloads/Lapak-Absen.apk",
++  "gudang-web": "https://lapakgudang.github.io/lapakgudang/",
+   "whatsapp": "6282384691477"      // nomor WA format internasional tanpa + (0823-8469-1477)
+ };
+ 
+-- 
+2.43.0
+
