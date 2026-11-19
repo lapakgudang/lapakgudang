@@ -27,14 +27,14 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--tx2);font-size:13px
 #login::before,#login::after{content:"";position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.06)}
 #login::before{width:520px;height:520px;left:-160px;bottom:-200px}
 #login::after{width:340px;height:340px;left:32%;top:-140px}
-.lleft{flex:1.15;display:flex;align-items:center;justify-content:center;padding:40px;position:relative;z-index:1}
+.lleft{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;padding:40px;position:relative;z-index:1}
 .lplate{width:100%;max-width:560px}
 .lplate img{display:block;width:100%;height:auto;max-height:46vh;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(0,0,0,.35))}
 .lplate img.lw{filter:brightness(0) invert(1) drop-shadow(0 6px 24px rgba(0,0,0,.35))}
 .lplate img.lt{filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 6px 24px rgba(0,0,0,.35))}
 .lplate.card{background:#fff;border-radius:22px;padding:32px 40px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
 .lplate.card img{filter:none}
-.lright{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 56px 24px 16px;position:relative;z-index:1}
+.lright{flex:0 0 456px;display:flex;align-items:center;justify-content:center;padding:24px 56px 24px 0;position:relative;z-index:1}
 .lbox{background:var(--card);border-radius:12px;padding:32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .pw{position:relative}.pw input{padding-right:42px}.pwb{position:absolute;right:2px;top:0;height:36px;width:38px;border:0;background:none;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}.pwb:hover,.pwb:focus-visible{color:var(--pri)}
 .cap{display:flex;align-items:center;gap:8px}
@@ -43,7 +43,7 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--tx2);font-size:13px
 @media(max-width:900px){
  #login{flex-direction:column}
  .lleft{flex:none;padding:32px 24px 4px}.lplate{max-width:280px}.lplate.card{padding:16px 22px;border-radius:16px}
- .lright{padding:20px 16px 32px}
+ .lright{flex:none;padding:20px 16px 32px}
 }
 .brand{font-size:24px;font-weight:700;color:var(--pri);margin-bottom:4px}
 .lbox form{display:flex;flex-direction:column;gap:14px;margin-top:20px}
